@@ -226,10 +226,10 @@ class MyGLSurfaceView extends GLSurfaceView {
     _gl.jumpButtonWidth = bWidth;
     _gl.jumpButtonHeight = bHeight;
 
-    _gl.runButtonX = 0.81f * _buttonScale;
+    _gl.runButtonX = 0.9f * _buttonScale;
     _gl.runButtonY = 0.07f * _buttonScale;
-    _gl.runButtonWidth = 0.1f * _buttonScale;
-    _gl.runButtonHeight = 0.05f * _buttonScale;
+    _gl.runButtonWidth = 0.04f * _buttonScale;
+    _gl.runButtonHeight = 0.04f * _buttonScale;
 
     _gl.joystickCenterX = _dPadCenterX;
     _gl.joystickCenterY = _dPadCenterY;

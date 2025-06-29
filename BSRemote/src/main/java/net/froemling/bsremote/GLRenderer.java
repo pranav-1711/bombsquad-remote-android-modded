@@ -232,7 +232,7 @@ public class GLRenderer implements GLSurfaceView.Renderer {
     checkGlError("loadTexture");
     _buttonRunTex = loadTexture(R.drawable.button_run);
     checkGlError("loadTexture");
-    _buttonRunPressedTex = loadTexture(R.drawable.button_jump_pressed);
+    _buttonRunPressedTex = loadTexture(R.drawable.button_run_pressed);
     checkGlError("loadTexture");
     _centerTex = loadTexture(R.drawable.center);
     checkGlError("loadTexture");
