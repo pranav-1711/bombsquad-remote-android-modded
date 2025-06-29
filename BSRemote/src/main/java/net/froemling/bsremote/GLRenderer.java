@@ -128,6 +128,8 @@ public class GLRenderer implements GLSurfaceView.Renderer {
   private int _buttonPunchPressedTex;
   private int _buttonThrowTex;
   private int _buttonThrowPressedTex;
+  private int _buttonRunTex;
+  private int _buttonRunPressedTex;
   private int _centerTex;
   private int _thumbTex;
   private int _thumbPressedTex;
@@ -177,6 +179,11 @@ public class GLRenderer implements GLSurfaceView.Renderer {
   volatile float jumpButtonWidth;
   volatile float jumpButtonHeight;
 
+  volatile float runButtonX;
+  volatile float runButtonY;
+  volatile float runButtonWidth;
+  volatile float runButtonHeight;
+
   volatile float joystickCenterX;
   volatile float joystickCenterY;
   volatile float joystickWidth;
@@ -190,6 +197,7 @@ public class GLRenderer implements GLSurfaceView.Renderer {
   volatile boolean throwPressed;
   volatile boolean bombPressed;
   volatile boolean thumbPressed;
+  volatile boolean runPressed;
 
   private float _ratio = 1.0f;
 
@@ -221,6 +229,10 @@ public class GLRenderer implements GLSurfaceView.Renderer {
     _buttonThrowTex = loadTexture(R.drawable.button_throw);
     checkGlError("loadTexture");
     _buttonThrowPressedTex = loadTexture(R.drawable.button_throw_pressed);
+    checkGlError("loadTexture");
+    _buttonRunTex = loadTexture(R.drawable.button_jump);
+    checkGlError("loadTexture");
+    _buttonRunPressedTex = loadTexture(R.drawable.button_jump_pressed);
     checkGlError("loadTexture");
     _centerTex = loadTexture(R.drawable.center);
     checkGlError("loadTexture");
@@ -297,6 +309,9 @@ public class GLRenderer implements GLSurfaceView.Renderer {
     _drawBox(throwButtonX, throwButtonY, throwButtonWidth * bs,
         throwButtonHeight * bs, 1, 1, 1,
         throwPressed ? _buttonThrowPressedTex : _buttonThrowTex);
+    _drawBox(runButtonX, runButtonY, runButtonWidth * bs,
+            runButtonHeight * bs, 1, 1, 1,
+            runPressed ? _buttonRunPressedTex : _buttonRunTex);
 
     float cs = 2.2f;
     _drawBox(joystickCenterX, joystickCenterY, joystickWidth * cs,

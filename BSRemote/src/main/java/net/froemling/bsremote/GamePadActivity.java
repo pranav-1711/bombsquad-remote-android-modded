@@ -50,6 +50,7 @@ class MyGLSurfaceView extends GLSurfaceView {
   private int _keyJump;
   private int _keyPunch;
   private int _keyBomb;
+  private int _keyRun;
   private int _keyRun1;
   private int _keyRun2;
   private int _keyStart;
@@ -225,6 +226,11 @@ class MyGLSurfaceView extends GLSurfaceView {
     _gl.jumpButtonWidth = bWidth;
     _gl.jumpButtonHeight = bHeight;
 
+    _gl.runButtonX = 0.81f * _buttonScale;
+    _gl.runButtonY = 0.07f * _buttonScale;
+    _gl.runButtonWidth = 0.1f * _buttonScale;
+    _gl.runButtonHeight = 0.05f * _buttonScale;
+
     _gl.joystickCenterX = _dPadCenterX;
     _gl.joystickCenterY = _dPadCenterY;
     _gl.joystickWidth = 0.2f * _dPadScale;
@@ -254,6 +260,8 @@ class MyGLSurfaceView extends GLSurfaceView {
     boolean throwHeld = false;
     boolean jumpHeld = false;
     boolean bombHeld = false;
+    boolean runHeld = false;
+
     float mult = 1.0f / getWidth();
     final int pointerCount = event.getPointerCount();
 
@@ -284,7 +292,7 @@ class MyGLSurfaceView extends GLSurfaceView {
       float threshold = 0.3f;
       float pbx, pby;
       float len;
-      float punchLen, jumpLen, throwLen, bombLen;
+      float punchLen, jumpLen, throwLen, bombLen, runLen;
 
       // punch
       pbx = (x - _gl.punchButtonX) * s;
@@ -318,6 +326,14 @@ class MyGLSurfaceView extends GLSurfaceView {
         bombHeld = true;
       }
 
+      // run
+      pbx = (x - _gl.runButtonX) * s;
+      pby = (y - _gl.runButtonY) * s;
+      runLen = len = (float) Math.sqrt(pbx * pbx + pby * pby);
+      if (len < threshold) {
+        runHeld = true;
+      }
+
       // how much larger than the button/dpad areas we should count touch
       // events in
       float buttonBuffer = 2.0f;
@@ -325,20 +341,23 @@ class MyGLSurfaceView extends GLSurfaceView {
       // a touch in our button area should *always* affect at least one
       // button
       // ..so lets find the closest button && press it.
-      // this will probably coincide with what we just set above but thats
+      // this will probably coincide with what we just set above but that's
       // ok.
       if (x > 0.5 && bx > -1.0 * buttonBuffer && bx < 1.0 * buttonBuffer &&
           by > -1.0 * buttonBuffer && by < 1.0 * buttonBuffer) {
-        if (punchLen < throwLen && punchLen < jumpLen && punchLen < bombLen) {
+        if (punchLen < throwLen && punchLen < jumpLen && punchLen < bombLen && punchLen < runLen) {
           punchHeld = true;
         } else if (throwLen < punchLen && throwLen < jumpLen &&
-            throwLen < bombLen) {
+            throwLen < bombLen && throwLen < runLen) {
           throwHeld = true;
         } else if (jumpLen < punchLen && jumpLen < throwLen &&
-            jumpLen < bombLen) {
+            jumpLen < bombLen && jumpLen < runLen) {
           jumpHeld = true;
-        } else {
+        } else if (bombLen < punchLen && bombLen < throwLen &&
+                  bombLen < jumpLen && bombLen < runLen) {
           bombHeld = true;
+        } else {
+          runHeld = true;
         }
       }
     }
@@ -351,6 +370,8 @@ class MyGLSurfaceView extends GLSurfaceView {
         GamePadActivity.BS_REMOTE_STATE_PUNCH) != 0);
     boolean bombWasHeld = ((_gamePadActivity._buttonStateV1 &
         GamePadActivity.BS_REMOTE_STATE_BOMB) != 0);
+    boolean runWasHeld = ((_gamePadActivity._buttonStateV1 &
+            GamePadActivity.BS_REMOTE_STATE_RUN) != 0);
 
     // send press events for non-held ones we're now over
     if (!throwWasHeld && throwHeld) {
@@ -384,6 +405,14 @@ class MyGLSurfaceView extends GLSurfaceView {
       _handleJumpRelease();
     }
 
+    // send run events for non-held ones we're now over
+    if ((!runWasHeld) && runHeld) {
+      _handleRunPress();
+    }
+    if (runWasHeld && !runHeld) {
+      _handleRunRelease();
+    }
+
   }
 
   private void _handleMenuPress() {
@@ -402,13 +431,17 @@ class MyGLSurfaceView extends GLSurfaceView {
   }
 
   private void _handleRunPress() {
+    _gamePadActivity._buttonStateV1 |= GamePadActivity.BS_REMOTE_STATE_RUN;
     _gamePadActivity._buttonStateV2 |= GamePadActivity.BS_REMOTE_STATE2_RUN;
     _gamePadActivity._doStateChange(false);
+    _gl.runPressed = true;
   }
 
   private void _handleRunRelease() {
+    _gamePadActivity._buttonStateV1 &= ~GamePadActivity.BS_REMOTE_STATE_RUN;
     _gamePadActivity._buttonStateV2 &= ~GamePadActivity.BS_REMOTE_STATE2_RUN;
     _gamePadActivity._doStateChange(false);
+    _gl.runPressed = false;
   }
 
   private void _handleThrowPress() {
@@ -699,7 +732,7 @@ class MyGLSurfaceView extends GLSurfaceView {
   }
 
   enum CaptureKey {
-    NONE, PICK_UP, JUMP, PUNCH, BOMB, RUN1, RUN2, START
+    NONE, PICK_UP, JUMP, PUNCH, BOMB, RUN, RUN1, RUN2, START
   }
 
   private CaptureKey _captureKey = CaptureKey.NONE;
@@ -718,6 +751,8 @@ class MyGLSurfaceView extends GLSurfaceView {
       case BOMB:
         _keyBomb = keyval;
         break;
+      case RUN:
+        _keyRun = keyval;
       case RUN1:
         _keyRun1 = keyval;
         break;
@@ -983,6 +1018,8 @@ class MyGLSurfaceView extends GLSurfaceView {
         GamePadActivity.BS_REMOTE_STATE_BOMB) != 0);
     boolean menuWasHeld = ((_gamePadActivity._buttonStateV1 &
         GamePadActivity.BS_REMOTE_STATE_MENU) != 0);
+    boolean runWasHeld = ((_gamePadActivity._buttonStateV1 &
+            GamePadActivity.BS_REMOTE_STATE_RUN) != 0);
     boolean handled = false;
 
     // check for custom assigned keys:
@@ -1005,6 +1042,11 @@ class MyGLSurfaceView extends GLSurfaceView {
       if (!bombWasHeld) {
         _handleBombPress();
       }
+      else if (keyCode == _keyRun) {
+        if (!runWasHeld) {
+          _handleRunPress();
+        }
+      }
       handled = true;
     } else if (keyCode == _keyStart) {
       if (!menuWasHeld) {
@@ -1012,13 +1054,13 @@ class MyGLSurfaceView extends GLSurfaceView {
       }
       handled = true;
     } else if ((keyCode == _keyRun1) || (keyCode == _keyRun2)) {
-      boolean runWasHeld =
+      boolean _runWasHeld =
           ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
       Integer kcInt = keyCode;
       this.mHeldKeys.add(kcInt);
       boolean runIsHeld =
           ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
-      if (!runWasHeld && runIsHeld) {
+      if (!_runWasHeld && runIsHeld) {
         _handleRunPress();
       }
       handled = true;
@@ -1080,13 +1122,13 @@ class MyGLSurfaceView extends GLSurfaceView {
           break;
         default:
           if (_isRunKey(keyCode)) {
-            boolean runWasHeld =
+            boolean _runWasHeld =
                 ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
             Integer kcInt = keyCode;
             this.mHeldKeys.add(kcInt);
             boolean runIsHeld =
                 ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
-            if (!runWasHeld && runIsHeld) {
+            if (!_runWasHeld && runIsHeld) {
               _handleRunPress();
             }
             handled = true;
@@ -1128,6 +1170,8 @@ class MyGLSurfaceView extends GLSurfaceView {
         GamePadActivity.BS_REMOTE_STATE_BOMB) != 0);
     boolean menuWasHeld = ((_gamePadActivity._buttonStateV1 &
         GamePadActivity.BS_REMOTE_STATE_MENU) != 0);
+    boolean runWasHeld = ((_gamePadActivity._buttonStateV1 &
+        GamePadActivity.BS_REMOTE_STATE_RUN) != 0);
 
     boolean handled = false;
 
@@ -1152,19 +1196,24 @@ class MyGLSurfaceView extends GLSurfaceView {
         _handleBombRelease();
       }
       handled = true;
+    } else if (keyCode == _keyRun) {
+      if (runWasHeld) {
+        _handleRunRelease();
+      }
+      handled = true;
     } else if (keyCode == _keyStart) {
       if (menuWasHeld) {
         _handleMenuRelease();
       }
       handled = true;
     } else if ((keyCode == _keyRun1) || (keyCode == _keyRun2)) {
-      boolean runWasHeld =
+      boolean _runWasHeld =
           ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
       Integer kcInt = keyCode;
       this.mHeldKeys.remove(kcInt);
       boolean runIsHeld =
           ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
-      if (runWasHeld && !runIsHeld) {
+      if (_runWasHeld && !runIsHeld) {
         _handleRunRelease();
       }
       handled = true;
@@ -1226,13 +1275,13 @@ class MyGLSurfaceView extends GLSurfaceView {
           break;
         default:
           if (_isRunKey(keyCode)) {
-            boolean runWasHeld =
+            boolean _runWasHeld =
                 ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
             Integer kcInt = keyCode;
             this.mHeldKeys.remove(kcInt);
             boolean runIsHeld =
                 ((!this.mHeldKeys.isEmpty()) || mHeldTriggerL || mHeldTriggerR);
-            if (runWasHeld && !runIsHeld) {
+            if (_runWasHeld && !runIsHeld) {
               _handleRunRelease();
             }
             handled = true;
@@ -1502,7 +1551,7 @@ class MyGLSurfaceView extends GLSurfaceView {
 public class GamePadActivity extends Activity {
 
   // flip this on for lots of log spewage to help diagnose oddities
-  public final static boolean debug = false;
+  public final static boolean debug = true;
   public final static String TAG = "BSRemoteGamePad";
   private WorkerThread _readThread;
   private WorkerThread _processThread;
@@ -1542,6 +1591,7 @@ public class GamePadActivity extends Activity {
   static final int BS_REMOTE_STATE_THROW = 1 << 2;
   static final int BS_REMOTE_STATE_BOMB = 1 << 3;
   static final int BS_REMOTE_STATE_MENU = 1 << 4;
+  static final int BS_REMOTE_STATE_RUN = 1 << 5;
   // (bits 6-10 are d-pad h-value and bits 11-15 are dpad v-value)
 
   static final int BS_REMOTE_STATE2_MENU = 1;
